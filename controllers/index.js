@@ -10,8 +10,16 @@ router.get('/', function (request, response, next) {
     response.render('index', {title: 'Online theater'});
 });
 
+router.get('/login', function (request, response, next) {
+    response.render('login');
+});
+
+router.post('/login', function(request, response, next) {
+    response.send('User entered ' + request.body.username + ' ' + request.body.password);
+});
+
 // catch 404 and forward to error handler
-router.use(function(req, res, next) {
+router.use(function (req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
     next(err);
