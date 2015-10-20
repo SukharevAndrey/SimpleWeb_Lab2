@@ -6,19 +6,19 @@ router.use('/users', require('./users'));
 router.use('/videos', require('./videos'));
 router.use('/api', require('./api'));
 
-router.get('/', function (request, response, next) {
+router.get('/', function (request, response) {
     response.render('index', {title: 'Online theater'});
 });
 
-router.get('/login', function (request, response, next) {
+router.get('/login', function (request, response) {
     response.render('login');
 });
 
-router.post('/login', function(request, response, next) {
+router.post('/login', function(request, response) {
     response.send('User entered ' + request.body.username + ' ' + request.body.password);
 });
 
-// catch 404 and forward to error handler
+// Catch 404 and forward to error handler
 router.use(function (req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;

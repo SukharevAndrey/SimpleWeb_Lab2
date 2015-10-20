@@ -2,4 +2,8 @@ extends layout
 block content
     h1= message
     h2= error.status
+    if error.statusCode
+        h3= error.statusCode
+    else
+        h3= "No status code"
     pre #{error.stack}
