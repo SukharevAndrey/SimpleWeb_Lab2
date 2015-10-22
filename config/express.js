@@ -18,4 +18,4 @@ var configureExpress = function (app) {
     }));
 };
 
-exports.configureExpress = configureExpress;
+module.exports.configureExpress = configureExpress;

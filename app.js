@@ -21,6 +21,7 @@ app.use(logger('dev'));
 app.set('views', path.join(__dirname, 'views'));
 // Setting Jade as default template engine
 app.set('view engine', 'jade');
+app.set('view options', {pretty: true});
 
 // Configuring Express
 require('./config/express').configureExpress(app);

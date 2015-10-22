@@ -16,7 +16,6 @@ var configurePassport = function (app) {
     // Use static serialize and deserialize of model for passport session support
     passport.serializeUser(User.serializeUser());
     passport.deserializeUser(User.deserializeUser());
-
 };
 
 exports.configurePassport = configurePassport;

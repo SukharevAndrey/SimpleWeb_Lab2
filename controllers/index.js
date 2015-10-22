@@ -2,20 +2,19 @@
 
 var router = require('express').Router();
 
+var ensureAuthenticated = require('../middlewares/auth').checkAuth;
+
 router.use('/users', require('./users'));
 router.use('/videos', require('./videos'));
 router.use('/api', require('./api'));
+router.use('/', require('./auth'));
 
 router.get('/', function (request, response) {
     response.render('index', {title: 'Online theater'});
 });
 
-router.get('/login', function (request, response) {
-    response.render('login');
-});
-
-router.post('/login', function(request, response) {
-    response.send('User entered ' + request.body.username + ' ' + request.body.password);
+router.get('/secret', ensureAuthenticated, function (request, response, next) {
+    response.send('You are authenticated. Good.')
 });
 
 // Catch 404 and forward to error handler
