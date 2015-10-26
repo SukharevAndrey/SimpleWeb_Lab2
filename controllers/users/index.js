@@ -22,7 +22,6 @@ var fetchUser = function (req, res, next, username) {
 
 var profile = function (req, res, next) {
     res.render('profile', {
-        currentUser: req.user,
         profileUser: req.profileUser
     });
 };

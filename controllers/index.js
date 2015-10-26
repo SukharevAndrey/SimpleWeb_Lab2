@@ -3,7 +3,9 @@
 var router = require('express').Router();
 
 var ensureAuthenticated = require('../middlewares/auth').checkAuth;
+var userAttached = require('../middlewares/user').userAttached;
 
+router.use(userAttached);
 router.use('/users', require('./users'));
 router.use('/videos', require('./videos'));
 router.use('/api', require('./api'));

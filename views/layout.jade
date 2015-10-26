@@ -6,9 +6,6 @@ html
         meta(name='viewport', content='width=device-width, initial-scale=1')
         link(rel='stylesheet', href='/css/bootstrap.min.css')
         link(rel='stylesheet', href='/css/bootstrap-theme.min.css')
-        block scripts
-            script(src='/js/jquery.min.js')
-            script(src='/js/bootstrap.min.js')
     body
         nav.navbar.navbar-default
             .container-fluid
@@ -25,6 +22,13 @@ html
                                 a(href='/register') Register
                         else
                             li
+                                a(href='/users/' + user.username) #{user.username}
+                            li
+                                a(href='/videos/upload') Upload video
+                            li
                                 a(href='/logout') Log Out
         .container
             block content
+    block scripts
+        script(src='/js/jquery.min.js')
+        script(src='/js/bootstrap.min.js')

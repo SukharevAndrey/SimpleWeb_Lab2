@@ -7,8 +7,10 @@ var cookieParser = require('cookie-parser');        // Simple cookie parser
 var path = require('path');                         // OS paths
 var mongoose = require('mongoose');                 // Advanced MongoDB driver
 var MongoStore = require('connect-mongo')(session); // MongoDB session storage
+var compression = require('compression');
 
 var configureExpress = function (app, rootPath) {
+    app.use(compression());
     app.use(express.static(path.join(rootPath, 'static')));
     app.use(bodyParser.json());
     app.use(bodyParser.urlencoded({extended: false}));

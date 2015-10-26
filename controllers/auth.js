@@ -35,6 +35,7 @@ var logIn = function (request, response, next) {
         if (!user) {
             return response.redirect('/login');
         }
+        
         request.logIn(user, function (err) {
             if (err) {
                 return next(err);

@@ -1,0 +1,11 @@
+extends layout
+
+block content
+    form(action='./upload', enctype='multipart/form-data', method='post')
+        input(type='text', name='title', placeholder='Title')
+        br
+        textarea(rows='10', cols='50', name='description', placeholder='Description')
+        br
+        input(type='file', name='media')
+        br
+        input(type='submit', value='Upload')

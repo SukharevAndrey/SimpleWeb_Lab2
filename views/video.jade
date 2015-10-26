@@ -1,0 +1,12 @@
+extends layout
+
+block content
+    video(src=videoUrl, controls='')
+    br
+    label #{title}
+    br
+    p Description:
+    p #{description}
+    p
+        | Uploaded by&nbsp;
+        a(href="#") #{username}

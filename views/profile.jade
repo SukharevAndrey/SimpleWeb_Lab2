@@ -2,7 +2,9 @@ extends layout
 block content
     p #{profileUser.username}'s profile page
     p Something interesting will be here
-    if currentUser.username == profileUser.username
+    if user.username == profileUser.username
         p You are viewing your own profile
+        p You can upload video
+
     else
         p You are viewing foreign profile
