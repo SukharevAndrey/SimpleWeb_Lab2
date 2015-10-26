@@ -3,12 +3,12 @@
 var router = require('express').Router();
 var passport = require('passport');
 
-var User = require('../../models/user');
+var User = require('../models/user');
 
-var csrfProtection = require('../../middlewares/auth').csrfProtection;
+var csrfProtection = require('../middlewares/auth').csrfProtection;
 
-var authPage = function (request, response) {
-    response.render('login', {csrfToken: request.csrfToken()});
+var authPage = function (req, res) {
+    res.render('login', {csrfToken: req.csrfToken()});
 };
 
 var registerPage = function (request, response) {
@@ -27,6 +27,29 @@ var registerUser = function (request, response, next) {
         });
 };
 
+var logIn = function (request, response, next) {
+    passport.authenticate('local', function (err, user, info) {
+        if (err) {
+            return next(err);
+        }
+        if (!user) {
+            return response.redirect('/login');
+        }
+        request.logIn(user, function (err) {
+            if (err) {
+                return next(err);
+            }
+
+            var redirectPath = '/users/' + user.username;
+            if (request.session.returnTo)
+                redirectPath = request.session.returnTo;
+
+            delete request.session.returnTo;
+            return response.redirect(redirectPath);
+        });
+    })(request, response, next);
+};
+
 var logOut = function (request, response, next) {
     request.logout();
     response.redirect('/');
@@ -34,10 +57,7 @@ var logOut = function (request, response, next) {
 
 router.route('/login')
     .get(csrfProtection, authPage)
-    .post(csrfProtection, passport.authenticate('local', {
-        successRedirect: '/',
-        failureRedirect: '/login'
-    }));
+    .post(csrfProtection, logIn);
 
 router.route('/register')
     .get(csrfProtection, registerPage)

@@ -23,14 +23,6 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 app.set('view options', {pretty: true});
 
-// Configuring Express
-require('./config/express').configureExpress(app);
-// Configuring authentication using Passport module
-require('./config/passport').configurePassport(app);
-
-// Connecting route handlers
-app.use('/', require('./controllers'));
-
 // Connecting to MongoDB using  mongoose
 mongoose.connect(app.config.dbPath, function (err) {
     if (err) {
@@ -40,6 +32,13 @@ mongoose.connect(app.config.dbPath, function (err) {
         console.log('Connection to MongoDB successful');
     }
 });
+// Configuring Express
+require('./config/express').configureExpress(app, __dirname);
+// Configuring authentication using Passport module
+require('./config/passport').configurePassport(app);
+
+// Connecting route handlers
+app.use('/', require('./controllers'));
 
 // Creating a server with application
 var server = http.createServer(app);
