@@ -34,7 +34,7 @@ var registerUser = function (req, res, next) {
         username: req.body.username,
         password: req.body.password
     }, config.constraints);
-    if (errors) {
+    if (errors.username || errors.password) {
         req.flash('error', [errors.username, errors.password].join(','));
         return res.redirect(req.originalUrl);
     }
@@ -60,7 +60,7 @@ var logIn = function (req, res, next) {
         username: req.body.username,
         password: req.body.password
     }, config.constraints);
-    if (errors) {
+    if (errors.username || errors.password) {
         req.flash('error', [errors.username, errors.password].join(','));
         return res.redirect(req.originalUrl);
     }

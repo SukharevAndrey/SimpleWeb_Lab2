@@ -1,9 +1,14 @@
 extends layout
 block content
+    include flash
     h1= title
     p Welcome to #{title}
     if user
         p You are logged in as #{user.username}
-        p All information about user: #{user}
+        //p All information about user: #{user}
+        if user.isModerator
+            p You are a moderator
+        if user.isAdmin
+            p You are an admin
     else
         p Not logged in

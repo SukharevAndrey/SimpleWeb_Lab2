@@ -10,7 +10,9 @@ var path = require('path');
 var validate = require('validate.js');
 var config = require('../../config');
 
-var checkAuth = require('../../middlewares/auth').checkAuth;
+var authMiddlewares = require('../../middlewares/auth');
+var checkAuth = authMiddlewares.checkAuth;
+
 var User = require('../../models/user');
 
 
@@ -43,6 +45,7 @@ var findVideoById = function (id, cb) {
         .match({'videos._id': id})
         .project({
             '_id': 0,
+            'id': '$videos._id',
             'username': '$username',
             'title': '$videos.title',
             'description': '$videos.description',
@@ -62,7 +65,13 @@ var videosPage = function (req, res, next) {
     fetchAllVideos(function (err, videos) {
         if (err)
             next(err);
-        res.render('all_videos', {videos: videos});
+        res.render('all_videos', {
+            videos: videos,
+            flash: {
+                notice: req.flash('notice'),
+                error: req.flash('error')
+            }
+        });
     });
 };
 
@@ -109,16 +118,8 @@ var upload = function (req, res, next) {
                     if (err)
                         return next(err);
                     console.log('Upload status: ' + status.toString());
-                });
-                User.find({_id: req.user.id}, function (err, user) {
-                    if (err)
-                        next(err);
-                    if (user) {
-                        res.json({files: files, fields: fields, user: user});
-                    }
-                    else {
-                        res.json({files: files, fields: fields, user: "Not found"});
-                    }
+                    req.flash('notice', 'You have successfully uploaded video');
+                    res.redirect(req.originalUrl);
                 });
             }
             else { // Throwing error and deleting unsupported file
@@ -153,12 +154,22 @@ var watch = function (req, res, next) {
             console.log('Video found in database');
             console.log(video);
 
+            var currentUser = null;
+            if (req.user)
+                currentUser = req.user.username;
+            var isModerator = false;
+            if (req.user)
+                isModerator = req.user.isModerator
+
             res.render('video', {
                 title: video.title,
                 description: video.description,
                 username: video.username,
                 uploadDate: video.uploadDate,
-                videoUrl: path.join('files', path.basename(video.storePath))
+                videoId: video.id,
+                videoUrl: path.join('files', path.basename(video.storePath)),
+                currentUserName: currentUser,
+                isModerator: isModerator
             });
         }
     });
@@ -205,11 +216,50 @@ var streamVideo = function (req, res, next) {
     });
 };
 
+var deleteVideo = function (req, res, next) {
+    var videoId = req.params.videoId;
+
+    findVideoById(videoId, function (err, video) {
+        if (err)
+            return next(err);
+        else if (!video) {
+            var notFound = new Error('Video not found');
+            notFound.status = 404;
+            next(notFound);
+        }
+        else {
+            if (video.username == req.user.username || req.user.isModerator || req.user.isAdmin) {
+                console.log('Deleting video');
+                User.update({'videos._id': videoId}, {
+                    $pop: {
+                        videos: {_id: videoId}
+                    }
+                }, function (err, status) {
+                    if (err)
+                        next(err);
+                    console.log('Delete status: ' + status);
+                    req.flash('notice', 'Video has been deleted');
+                    res.redirect('/videos');
+                });
+                // TODO: Delete video files (or not?)
+            }
+            else {
+                console.log('Deleting prohibited');
+                var accessError = new Error('Access denied');
+                return next(accessError);
+            }
+        }
+    });
+
+
+};
+
 router.get('/', videosPage);
 router.get('/watch', watch);
 router.route('/upload')
     .get(checkAuth, uploadPage)
     .post(checkAuth, upload);
 router.get('/files/:fileName', streamVideo);
+router.get('/delete/:videoId', checkAuth, deleteVideo);
 
 module.exports = router;

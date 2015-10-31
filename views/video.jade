@@ -12,3 +12,9 @@ block content
     p
         | Uploaded by&nbsp;
         a(href="../users/" + username) #{username}
+    if currentUserName && username && currentUserName == username
+        p This is your video. You can delete it
+        a(href="./delete/" + videoId) Delete video
+    else if isModerator
+        p You are a moderator. You can delete it
+        a(href="./delete/" + videoId) Delete video
