@@ -9,7 +9,8 @@ var Video = new Schema({
     title: String,
     description: String,
     storePath: String, // Absolute path where file is stored
-    uploadDate: {type: Schema.Types.Date, default: Date.now}
+    uploadDate: {type: Schema.Types.Date, default: Date.now},
+    size: Schema.Types.Number
 });
 
 module.exports = mongoose.model('Video', Video);

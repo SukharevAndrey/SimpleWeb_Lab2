@@ -6,6 +6,7 @@ var mmm = require('mmmagic'),                        // Library for detecting fi
     Magic = mmm.Magic;
 var magic = new Magic(mmm.MAGIC_MIME_TYPE);
 var fs = require('fs');                              // File system module
+var path = require('path');
 var config = require('../../config');
 
 var checkAuth = require('../../middlewares/auth').checkAuth;
@@ -40,7 +41,8 @@ var findVideoById = function (id, cb) {
             'title': '$videos.title',
             'description': '$videos.description',
             'uploadDate': '$videos.uploadDate',
-            'storePath': '$videos.storePath'
+            'storePath': '$videos.storePath',
+            'fileSize': '$videos.size'
         })
         .exec(function (err, videos) {
             if (videos)
@@ -76,6 +78,7 @@ var upload = function (req, res, next) {
 
         console.log('Upload completed');
         var filePath = files.media[0].path;
+        var fileSize = files.media[0].size;
         magic.detectFile(filePath, function (err, fileType) {
             if (err)
                 return next(err);
@@ -86,7 +89,8 @@ var upload = function (req, res, next) {
                         videos: {
                             title: fields.title,
                             description: fields.description,
-                            storePath: filePath
+                            storePath: filePath,
+                            size: fileSize
                         }
                     }
                 }, function (err, status) {
@@ -134,22 +138,59 @@ var watch = function (req, res, next) {
             next(notFound);
         }
         else {
+            console.log('Video found in database');
             console.log(video);
+
             res.render('video', {
                 title: video.title,
                 description: video.description,
                 username: video.username,
                 uploadDate: video.uploadDate,
-                videoUrl: ''
+                videoUrl: path.join('files', path.basename(video.storePath))
             });
         }
     });
-    //res.render('video', {
-    //    title: 'Video title, id=' + req.query.v,
-    //    description: 'Video description',
-    //    videoUrl: '',
-    //    username: 'Foo bar'
-    //});
+};
+
+var streamVideo = function (req, res, next) {
+    console.log('Streaming requested. Filename: ' + req.params.fileName);
+    var videoPath = path.resolve(path.join('static', 'uploads', req.params.fileName));
+
+    fs.stat(videoPath, function (err, stats) {
+        if (err)
+            return next(err);
+
+        var fileSize = stats.size;
+        console.log('Video with size ' + fileSize + ' is found on server');
+
+        if (req.headers['range']) {
+            var range = req.headers.range,
+                parts = range.replace(/bytes=/, "").split("-"),
+                partialstart = parts[0],
+                partialend = parts[1],
+                start = parseInt(partialstart, 10),
+                end = partialend ? parseInt(partialend, 10) : fileSize - 1,
+                chunksize = (end - start) + 1;
+
+            var file = fs.createReadStream(videoPath, {start: start, end: end});
+
+            res.status(206);
+            res.header({
+                'Content-Range': 'bytes ' + start + '-' + end + '/' + fileSize,
+                'Accept-Ranges': 'bytes', 'Content-Length': chunksize,
+                'Content-Type': 'video/mp4'
+            });
+            file.pipe(res)
+        }
+        else {
+            res.status(200);
+            res.header({
+                'Content-Length': fileSize,
+                'Content-Type': 'video/mp4'
+            });
+            fs.createReadStream(videoPath).pipe(res)
+        }
+    });
 };
 
 router.get('/', videosPage);
@@ -157,5 +198,6 @@ router.get('/watch', watch);
 router.route('/upload')
     .get(checkAuth, uploadPage)
     .post(checkAuth, upload);
+router.get('/files/:fileName', streamVideo);
 
 module.exports = router;
