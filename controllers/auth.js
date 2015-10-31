@@ -2,53 +2,90 @@
 
 var router = require('express').Router();
 var passport = require('passport');
+var validate = require('validate.js');
 
 var User = require('../models/user');
+var config = require('../config');
 
 var csrfProtection = require('../middlewares/auth').csrfProtection;
 
 var authPage = function (req, res) {
-    res.render('login', {csrfToken: req.csrfToken()});
+    res.render('login', {
+        csrfToken: req.csrfToken(),
+        flash: {
+            notice: req.flash('notice'),
+            error: req.flash('error')
+        }
+    });
 };
 
-var registerPage = function (request, response) {
-    response.render('register', {csrfToken: request.csrfToken()});
+var registerPage = function (req, res) {
+    res.render('register', {
+        csrfToken: req.csrfToken(),
+        flash: {
+            notice: req.flash('notice'),
+            error: req.flash('error')
+        }
+    });
 };
 
-var registerUser = function (request, response, next) {
-    User.register(new User({username: request.body.username}),
-        request.body.password, function (err) {
+var registerUser = function (req, res, next) {
+    var errors = validate({
+        username: req.body.username,
+        password: req.body.password
+    }, config.constraints);
+    if (errors) {
+        req.flash('error', [errors.username, errors.password].join(','));
+        return res.redirect(req.originalUrl);
+    }
+
+    User.register(new User({username: req.body.username}),
+        req.body.password, function (err) {
             if (err) {
                 console.log('Error with user registration: ' + err);
-                return next(err);
+                if (err.name !== 'UserExistsError')
+                    return next(err);
+                else {
+                    req.flash('error', 'User with such name is already existing');
+                    return res.redirect(req.originalUrl);
+                }
             }
 
-            response.redirect('/');
+            res.redirect('/');
         });
 };
 
-var logIn = function (request, response, next) {
+var logIn = function (req, res, next) {
+    var errors = validate({
+        username: req.body.username,
+        password: req.body.password
+    }, config.constraints);
+    if (errors) {
+        req.flash('error', [errors.username, errors.password].join(','));
+        return res.redirect(req.originalUrl);
+    }
+
     passport.authenticate('local', function (err, user, info) {
         if (err) {
             return next(err);
         }
         if (!user) {
-            return response.redirect('/login');
+            return res.redirect('/login');
         }
-        
-        request.logIn(user, function (err) {
+
+        req.logIn(user, function (err) {
             if (err) {
                 return next(err);
             }
 
             var redirectPath = '/users/' + user.username;
-            if (request.session.returnTo)
-                redirectPath = request.session.returnTo;
+            if (req.session.returnTo)
+                redirectPath = req.session.returnTo;
 
-            delete request.session.returnTo;
-            return response.redirect(redirectPath);
+            delete req.session.returnTo;
+            return res.redirect(redirectPath);
         });
-    })(request, response, next);
+    })(req, res, next);
 };
 
 var logOut = function (request, response, next) {

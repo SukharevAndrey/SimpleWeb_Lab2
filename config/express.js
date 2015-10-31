@@ -8,6 +8,7 @@ var path = require('path');                         // OS paths
 var mongoose = require('mongoose');                 // Advanced MongoDB driver
 var MongoStore = require('connect-mongo')(session); // MongoDB session storage
 var compression = require('compression');
+var flash = require('connect-flash');               // Flash messages sender
 
 var configureExpress = function (app, rootPath) {
     app.use(compression());
@@ -21,6 +22,7 @@ var configureExpress = function (app, rootPath) {
         resave: false,
         saveUninitialized: false
     }));
+    app.use(flash());
 };
 
 module.exports.configureExpress = configureExpress;

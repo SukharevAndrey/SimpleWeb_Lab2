@@ -7,6 +7,7 @@ var mmm = require('mmmagic'),                        // Library for detecting fi
 var magic = new Magic(mmm.MAGIC_MIME_TYPE);
 var fs = require('fs');                              // File system module
 var path = require('path');
+var validate = require('validate.js');
 var config = require('../../config');
 
 var checkAuth = require('../../middlewares/auth').checkAuth;
@@ -14,7 +15,12 @@ var User = require('../../models/user');
 
 
 var uploadPage = function (req, res, next) {
-    res.render('upload');
+    res.render('upload', {
+        flash: {
+            notice: req.flash('notice'),
+            error: req.flash('error')
+        }
+    });
 };
 
 var fetchAllVideos = function (cb) {
@@ -71,10 +77,16 @@ var upload = function (req, res, next) {
         next(err);
     });
 
-
     form.parse(req, function (err, fields, files) {
         if (err)
             return next(err);
+
+        console.log(fields.title[0]);
+        var errors = validate({title: fields.title[0]}, config.constraints);
+        if (errors.title) {
+            req.flash('error', errors.title);
+            return res.redirect(req.originalUrl);
+        }
 
         console.log('Upload completed');
         var filePath = files.media[0].path;

@@ -1,15 +1,14 @@
 extends layout
 block content
     p #{profileUser.username}'s profile page
-    p Something interesting will be here
     if user && user.username == profileUser.username
-        p You are viewing your own profile
+        p This is your own profile
     else
-        p You are viewing foreign profile
+        p This is not your profile
     if videos.length == 0
-        p You have no uploaded videos
+        p #{profileUser.username} has no uploaded videos
     else
-        p Your uploaded videos:
+        p Videos uploaded by #{profileUser.username}:
         ul
             each video in videos
                 li

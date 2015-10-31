@@ -1,8 +1,7 @@
 extends layout
 
 block content
-    //video(src='../' + videoUrl, controls='')
-    video(src=videoUrl, controls='')
+    video(src=videoUrl, controls='', data-autoresize="fit", width="50%")
     br
     label #{title}
     br
@@ -12,4 +11,4 @@ block content
     p #{uploadDate}
     p
         | Uploaded by&nbsp;
-        a(href="#") #{username}
+        a(href="../users/" + username) #{username}
