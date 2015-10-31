@@ -4,11 +4,12 @@ var router = require('express').Router();
 var User = require('../../models/user');
 
 var fetchUser = function (req, res, next, username) {
-    User.findOne({username: username}, 'username _id', function (err, user) {
+    User.findOne({username: username}, '_id username videos', function (err, user) {
         if (err) {
             next(err);
         }
         else if (user) {
+            console.log('Loaded', user);
             req.profileUser = user;
             next();
         }
@@ -21,8 +22,10 @@ var fetchUser = function (req, res, next, username) {
 };
 
 var profile = function (req, res, next) {
+    // TODO: Store only user id and fetch videos on demand
     res.render('profile', {
-        profileUser: req.profileUser
+        profileUser: req.profileUser,
+        videos: req.profileUser.videos
     });
 };
 

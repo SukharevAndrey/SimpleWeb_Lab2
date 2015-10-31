@@ -7,14 +7,55 @@ var mmm = require('mmmagic'),                        // Library for detecting fi
 var magic = new Magic(mmm.MAGIC_MIME_TYPE);
 var fs = require('fs');                              // File system module
 var config = require('../../config');
+
 var checkAuth = require('../../middlewares/auth').checkAuth;
+var User = require('../../models/user');
+
 
 var uploadPage = function (req, res, next) {
     res.render('upload');
 };
 
+var fetchAllVideos = function (cb) {
+    User
+        .aggregate({$unwind: '$videos'})
+        .project({
+            _id: '$videos._id',
+            'username': '$username',
+            'title': '$videos.title',
+            'uploadDate': '$videos.uploadDate'
+        })
+        .sort({uploadDate: -1})
+        .exec(cb);
+};
+
+var findVideoById = function (id, cb) {
+    console.log('Searching video with id=' + id);
+    User
+        .aggregate({$unwind: '$videos'})
+        .match({'videos._id': id})
+        .project({
+            '_id': 0,
+            'username': '$username',
+            'title': '$videos.title',
+            'description': '$videos.description',
+            'uploadDate': '$videos.uploadDate',
+            'storePath': '$videos.storePath'
+        })
+        .exec(function (err, videos) {
+            if (videos)
+                cb(err, videos[0]);
+            else
+                cb(err, null);
+        });
+};
+
 var videosPage = function (req, res, next) {
-    res.render('all_videos');
+    fetchAllVideos(function (err, videos) {
+        if (err)
+            next(err);
+        res.render('all_videos', {videos: videos});
+    });
 };
 
 var upload = function (req, res, next) {
@@ -23,8 +64,8 @@ var upload = function (req, res, next) {
         maxFilesSize: config.maxFileSize
     });
 
-    form.on('error', function(err) {
-        console.log('Error parsing form: ' + err.code + ' ' + err.status + ' '+  err.stack);
+    form.on('error', function (err) {
+        console.log('Error parsing form: ' + err.code + ' ' + err.status + ' ' + err.stack);
         next(err);
     });
 
@@ -35,17 +76,40 @@ var upload = function (req, res, next) {
 
         console.log('Upload completed');
         var filePath = files.media[0].path;
-        magic.detectFile(filePath, function(err, fileType) {
+        magic.detectFile(filePath, function (err, fileType) {
             if (err)
                 return next(err);
 
-            if (config.allowedVideoFormats.hasOwnProperty(fileType)) // File type is supported
-                res.json({files: files, fields: fields});
+            if (config.allowedVideoFormats.hasOwnProperty(fileType)) {
+                User.update({_id: req.user._id}, {
+                    $push: {
+                        videos: {
+                            title: fields.title,
+                            description: fields.description,
+                            storePath: filePath
+                        }
+                    }
+                }, function (err, status) {
+                    if (err)
+                        return next(err);
+                    console.log('Upload status: ' + status.toString());
+                });
+                User.find({_id: req.user.id}, function (err, user) {
+                    if (err)
+                        next(err);
+                    if (user) {
+                        res.json({files: files, fields: fields, user: user});
+                    }
+                    else {
+                        res.json({files: files, fields: fields, user: "Not found"});
+                    }
+                });
+            }
             else { // Throwing error and deleting unsupported file
                 fs.unlink(filePath, function (err) {
                     if (err)
                         return next(err);
-                    console.log('Uploaded unsupported file successfully deleted');
+                    console.log('Unsupported file successfully deleted');
                 });
 
                 var invalidTypeError = new Error('Unsupported file type');
@@ -61,12 +125,31 @@ var watch = function (req, res, next) {
     if (!req.query.hasOwnProperty('v'))
         return res.redirect('./');
 
-    res.render('video', {
-        title: 'Video title, id=' + req.query.v,
-        description: 'Video description',
-        videoUrl: '',
-        username: 'Foo bar'
+    findVideoById(req.query.v, function (err, video) {
+        if (err)
+            return next(err);
+        else if (!video) {
+            var notFound = new Error('Video not found');
+            notFound.status = 404;
+            next(notFound);
+        }
+        else {
+            console.log(video);
+            res.render('video', {
+                title: video.title,
+                description: video.description,
+                username: video.username,
+                uploadDate: video.uploadDate,
+                videoUrl: ''
+            });
+        }
     });
+    //res.render('video', {
+    //    title: 'Video title, id=' + req.query.v,
+    //    description: 'Video description',
+    //    videoUrl: '',
+    //    username: 'Foo bar'
+    //});
 };
 
 router.get('/', videosPage);

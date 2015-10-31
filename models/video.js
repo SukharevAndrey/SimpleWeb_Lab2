@@ -1,14 +1,15 @@
 'use strict';
 
+var shortid = require('shortid');
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
 var Video = new Schema({
-    uploadedBy: Schema.Types.ObjectId,
-    name: String,
+    _id: {type: String, unique: true, default: shortid.generate},
+    title: String,
     description: String,
     storePath: String, // Absolute path where file is stored
-    uploadDate: Schema.Types.Date
+    uploadDate: {type: Schema.Types.Date, default: Date.now}
 });
 
 module.exports = mongoose.model('Video', Video);
